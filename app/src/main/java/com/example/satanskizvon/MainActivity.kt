@@ -11,6 +11,7 @@ import com.example.satanskizvon.data.database.QRCodeDatabase
 import com.example.satanskizvon.data.repository.QRCodeRepository
 import com.example.satanskizvon.ui.MainScreen
 import com.example.satanskizvon.viewModel.MainViewModel
+import com.example.satanskizvon.viewModel.MainViewModelFactory
 
 class MainActivity : ComponentActivity()
 {
@@ -20,12 +21,10 @@ class MainActivity : ComponentActivity()
     {
         super.onCreate(savedInstanceState)
 
-
         val database = QRCodeDatabase.getDatabase(this)
         val repository = QRCodeRepository(database.qrCodeDao())
-        val viewModelFactory = MainViewModelFactory(repository)
+        val viewModelFactory = MainViewModelFactory(repository, this)
         viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
-        
 
         setContent {
             MaterialTheme {
