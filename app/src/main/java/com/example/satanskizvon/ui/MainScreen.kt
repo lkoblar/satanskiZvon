@@ -2,6 +2,7 @@ package com.example.satanskizvon.ui
 
 import android.app.TimePickerDialog
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,32 +12,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.Activity.QrCodeActivity
 import com.example.satanskizvon.data.model.Alarm
 import com.example.satanskizvon.viewModel.MainViewModel
 import java.time.LocalTime
 import java.util.Calendar
 
 @Composable
-fun MainScreen(viewModel: MainViewModel)
+fun MainScreen(viewModel: MainViewModel,context: Context)
 {
-    val alarm by viewModel.alarm.collectAsState()
-    val remainingTime by viewModel.remainingTime.collectAsState()
-    val isQRCodeScanningEnabled by viewModel.isQRCodeScanningEnabled.collectAsState()
-    val isVibrationEnabled by viewModel.isVibrationEnabled.collectAsState()
-    val isAlarmEnabled by viewModel.isAlarmEnabled.collectAsState()
+    val alarm by viewModel.alarm.observeAsState()
+    val remainingTime by viewModel.remainingTime.observeAsState("")
+    val isQRCodeScanningEnabled by viewModel.isQRCodeScanningEnabled.observeAsState(false)
+    val isVibrationEnabled by viewModel.isVibrationEnabled.observeAsState(false)
+    val isAlarmEnabled by viewModel.isAlarmEnabled.observeAsState(false)
 
     Column(modifier = Modifier.padding(16.dp))
     {
@@ -50,7 +55,9 @@ fun MainScreen(viewModel: MainViewModel)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp))
         {
             Text("Turn off with QR code")
             Spacer(modifier = Modifier.weight(1f))
@@ -60,7 +67,9 @@ fun MainScreen(viewModel: MainViewModel)
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp))
         {
             Text("Enable Vibration")
             Spacer(modifier = Modifier.weight(1f))
@@ -74,10 +83,21 @@ fun MainScreen(viewModel: MainViewModel)
 
         Button(
             onClick = { /* Navigate to AddQRCodeScreen */ },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             elevation = ButtonDefaults.buttonElevation(8.dp)
         ) {
             Text("List of QR Codes")
+        }
+        QrCOdeUi(viewModel, context = context)
+        
+        Button(onClick = {
+          val intent = Intent(context,QrCodeActivity::class.java)
+            context.startActivity(intent)
+        },
+            modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Add Qr Code")
         }
     }
 }
@@ -102,7 +122,9 @@ fun TimePicker(isAlarmEnabled: Boolean, alarm: Alarm?, remainingTime: String, on
                 onTimeSelected(selectedTime)
             }
         },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         elevation = ButtonDefaults.buttonElevation(8.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp))
@@ -118,6 +140,11 @@ fun TimePicker(isAlarmEnabled: Boolean, alarm: Alarm?, remainingTime: String, on
                 Text(text = "Alarm is disabled")
 
             Switch(
+                colors  = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color.Black,
+
+                ),
                 checked = isAlarmEnabled,
                 onCheckedChange = { onAlarmEnabledChange(it) }
             )

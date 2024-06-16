@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">satanskiZvon</string>
+    <string name="title_activity_qr_code">QrCodeActivity</string>
 </resources>

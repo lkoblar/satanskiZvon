@@ -1,4 +1,4 @@
-package com.example.satanskizvon
+package com.example.Activity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity()
         setContent {
             MaterialTheme {
                 Surface {
-                    MainScreen(viewModel)
+                    MainScreen(viewModel,this)
                 }
             }
         }

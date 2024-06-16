@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.content.Context
 import android.content.Intent
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import java.time.Duration
 import java.time.LocalTime
 import java.time.LocalDate
@@ -19,41 +21,42 @@ import com.example.satanskizvon.data.model.QRCode
 import com.example.satanskizvon.data.repository.QRCodeRepository
 
 
+
+
 class MainViewModel(private val repository: QRCodeRepository, private val context: Context) : ViewModel()
 {
-    private val _alarm = MutableStateFlow<Alarm?>(null)
-    val alarm: StateFlow<Alarm?> = _alarm
+    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    private val _remainingTime = MutableStateFlow("")
-    val remainingTime: StateFlow<String> = _remainingTime
+    private val _alarm = MutableLiveData<Alarm?>()
+    val alarm: LiveData<Alarm?> = _alarm
 
-    private val _isVibrationEnabled = MutableStateFlow(false)
-    val isVibrationEnabled: StateFlow<Boolean> = _isVibrationEnabled
+    private val _remainingTime = MutableLiveData<String>()
+    val remainingTime: LiveData<String> = _remainingTime
 
-    private val _isQRCodeScanningEnabled = MutableStateFlow(false)
-    val isQRCodeScanningEnabled: StateFlow<Boolean> = _isQRCodeScanningEnabled
+    private val _isVibrationEnabled = MutableLiveData<Boolean>()
+    val isVibrationEnabled: LiveData<Boolean> = _isVibrationEnabled
 
-    private val _isAlarmEnabled = MutableStateFlow(false)
-    val isAlarmEnabled: StateFlow<Boolean> = _isAlarmEnabled
+    private val _isQRCodeScanningEnabled = MutableLiveData<Boolean>()
+    val isQRCodeScanningEnabled: LiveData<Boolean> = _isQRCodeScanningEnabled
 
-    init
-    {
+    private val _isAlarmEnabled = MutableLiveData<Boolean>()
+    val isAlarmEnabled: LiveData<Boolean> = _isAlarmEnabled
+
+    init {
         loadPreferences()
     }
 
-    fun setAlarm(time: LocalTime)
-    {
+    fun setAlarm(time: LocalTime) {
         _alarm.value = Alarm(time, true)
         updateRemainingTime(time)
         savePreference("alarm_set_time", time.toString())
 
-        if (_isAlarmEnabled.value)
+        if (_isAlarmEnabled.value == true) {
             setAlarmManager(time)
+        }
     }
 
-    private fun setAlarmManager(time: LocalTime)
-    {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private fun setAlarmManager(time: LocalTime) {
         val intent = Intent(context, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
@@ -65,27 +68,23 @@ class MainViewModel(private val repository: QRCodeRepository, private val contex
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
     }
 
-    fun setAlarmEnabled(enabled: Boolean)
-    {
+    fun setAlarmEnabled(enabled: Boolean) {
         _isAlarmEnabled.value = enabled
         savePreference("alarm_enabled", enabled)
 
-        if (!enabled)
-            stopAndCancelAlarm()
-        else
-        {
+        if (!enabled) {
+            cancelAlarm()
+        } else {
             _alarm.value?.let { alarm ->
                 setAlarmManager(alarm.time)
             }
         }
     }
 
-    private fun stopAndCancelAlarm()
+    private fun cancelAlarm()
     {
-        // Cancel future alarms
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, AlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE )
         alarmManager.cancel(pendingIntent)
 
         // Stop if ringing
@@ -111,10 +110,8 @@ class MainViewModel(private val repository: QRCodeRepository, private val contex
     {
         viewModelScope.launch {
             val prefs = context.getSharedPreferences("alarm_prefs", Context.MODE_PRIVATE)
-            with(prefs.edit())
-            {
-                when (value)
-                {
+            with(prefs.edit()) {
+                when (value) {
                     is Boolean -> putBoolean(key, value)
                     is String -> putString(key, value)
                     else -> throw IllegalArgumentException("Invalid type for preference value")
@@ -132,8 +129,7 @@ class MainViewModel(private val repository: QRCodeRepository, private val contex
         _isQRCodeScanningEnabled.value = prefs.getBoolean("useQRCode_enabled", false)
 
         val alarmTimeString = prefs.getString("alarm_set_time", null)
-        if (alarmTimeString != null)
-        {
+        if (alarmTimeString != null) {
             val alarmTime = LocalTime.parse(alarmTimeString)
             _alarm.value = Alarm(alarmTime, true)
             updateRemainingTime(alarmTime)
@@ -152,14 +148,13 @@ class MainViewModel(private val repository: QRCodeRepository, private val contex
     {
         val currentTime = LocalTime.now()
         var duration = Duration.between(currentTime, alarmTime)
-        if (duration.isNegative)
-        {
+        if (duration.isNegative) {
             duration = duration.plusDays(1) // Add 24 hours if the duration is negative
         }
         return duration
     }
 
-    val qrCodes: Flow<List<QRCode>> = repository.allQRCodes
+    val qrCodes: LiveData<List<QRCode>> = repository.allQRCodes
 
     fun addQRCode(qrCode: QRCode)
     {
@@ -167,4 +162,12 @@ class MainViewModel(private val repository: QRCodeRepository, private val contex
             repository.insert(qrCode)
         }
     }
+
+    fun deleteQRCode(qrCode: QRCode)
+    {
+        viewModelScope.launch {
+            repository.delete(qrCode)
+        }
+    }
 }
+

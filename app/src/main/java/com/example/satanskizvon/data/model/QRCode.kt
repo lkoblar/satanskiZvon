@@ -10,3 +10,12 @@ data class QRCode(
     @ColumnInfo(name = "Name") var name: String,
     @ColumnInfo(name = "Data") var data: String
 )
+
+
+
+
+
+
+
+
+
